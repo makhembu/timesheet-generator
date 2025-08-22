@@ -1,36 +1,138 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Timesheet Generator
+
+A professional timesheet generation application built with Next.js for interpreter services. This web application allows users to create, fill out, and generate PDF timesheets for language interpretation services.
+
+## Features
+
+- **Interactive Form**: Complete form with all necessary fields for interpreter timesheets
+- **Live Preview**: Real-time preview of how the timesheet will look
+- **PDF Generation**: Generate filled PDFs with all entered data
+- **Blank Template**: Download blank templates for manual completion
+- **Auto-calculation**: Automatic duration calculation based on start and end times
+- **Professional Design**: Clean, modern UI with responsive design
+- **Company Branding**: Includes company logo and professional styling
+
+## Form Sections
+
+### Booking Details
+- Date and time information
+- Language and subject details
+- Location and service user information
+- Booking and interpreter notes
+
+### Interpreter Profile
+- Interpreter name and job reference
+- Reporting structure and contact information
+
+### Customer Section
+- Actual start/finish times
+- Service quality assessments
+- Customer signature and department details
+
+### Interpreter Declaration
+- Legal declaration text
+- Signature and date fields
+
+## Technology Stack
+
+- **Frontend**: Next.js 15 with React 19
+- **Styling**: Tailwind CSS
+- **PDF Generation**: jsPDF
+- **TypeScript**: Full type safety
+- **Responsive Design**: Mobile-first approach
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
 
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd timesheet-generator
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Run the development server:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Learn More
+### Building for Production
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build
+npm start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Usage
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Fill out the form**: Complete all required fields in the interactive form
+2. **Live preview**: See real-time updates in the preview section
+3. **Generate PDF**: Click "Generate Timesheet PDF" to download the completed timesheet
+4. **Blank template**: Use "Download Blank Template" for manual completion
 
-## Deploy on Vercel
+## PDF Features
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Professional letterhead with company branding
+- Clean, organized layout
+- Automatic page breaks for long content
+- Professional footer with company information
+- High-quality output suitable for business use
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Company Information
+
+**Jambo Linguists Ltd**
+- The Home Of Swahili
+- Radley House, Richardshaw Rd, Pudsey, LS28 6LE
+- Company No. 15333696
+- Email: jamii@jambolinguists.com
+- Phone: +44 7938 065717
+
+## Development
+
+### Project Structure
+```
+timesheet-generator/
+├── app/
+│   ├── page.tsx          # Main application component
+│   ├── layout.tsx        # App layout
+│   ├── globals.css       # Global styles
+│   └── favicon.ico       # App icon
+├── public/               # Static assets
+├── package.json          # Dependencies
+└── README.md            # This file
+```
+
+### Key Components
+- `TimesheetGenerator`: Main component with form and PDF generation
+- Form state management with React hooks
+- PDF generation using jsPDF library
+- Responsive UI with Tailwind CSS
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+This project is proprietary software for Jambo Linguists Ltd.
+
+## Support
+
+For support or questions, please contact:
+- Email: jamii@jambolinguists.com
+- Phone: +44 7938 065717

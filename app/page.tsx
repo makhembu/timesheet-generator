@@ -29,7 +29,6 @@ interface TimesheetData {
   customerDate: string;
   interpreterSignature: string;
   interpreterDate: string;
-  interpreterDeclaration: string;
 }
 
 export default function TimesheetGenerator() {
@@ -58,8 +57,7 @@ export default function TimesheetGenerator() {
     customerSignature: '',
     customerDate: '',
     interpreterSignature: '',
-    interpreterDate: '',
-    interpreterDeclaration: 'I am an authorised signatory for my department. I am signing to confirm that the Interpreter and the hours that I am authorising are accurate and I approve payment. I am signing to confirm that I have checked and verified the photo identification of the interpreter with the timesheet. I understand that if I knowingly provide false information this may result in disciplinary action and I may be liable to prosecution and civil recovery proceedings. I consent to the disclosure of information from this form to and by the Participating Authority for the purpose of verification of this claim and the investigation, prevention, detection and prosecution of fraud.'
+    interpreterDate: ''
   });
 
   const handleInputChange = (field: keyof TimesheetData, value: string) => {
@@ -394,8 +392,7 @@ export default function TimesheetGenerator() {
           customerSignature: '',
           customerDate: '',
           interpreterSignature: '',
-          interpreterDate: '',
-          interpreterDeclaration: ''
+          interpreterDate: ''
         }
       : formData;
 
@@ -535,7 +532,7 @@ export default function TimesheetGenerator() {
     await sectionTitle('INTERPRETER\'S DECLARATION');
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(8); // Increased font size for better readability
-    const declarationText = data.interpreterDeclaration || 'I am an authorised signatory for my department. I am signing to confirm that the Interpreter and the hours that I am authorising are accurate and I approve payment. I am signing to confirm that I have checked and verified the photo identification of the interpreter with the timesheet. I understand that if I knowingly provide false information this may result in disciplinary action and I may be liable to prosecution and civil recovery proceedings. I consent to the disclosure of information from this form to and by the Participating Authority for the purpose of verification of this claim and the investigation, prevention, detection and prosecution of fraud.';
+    const declarationText = 'I am an authorised signatory for my department. I am signing to confirm that the Interpreter and the hours that I am authorising are accurate and I approve payment. I am signing to confirm that I have checked and verified the photo identification of the interpreter with the timesheet. I understand that if I knowingly provide false information this may result in disciplinary action and I may be liable to prosecution and civil recovery proceedings. I consent to the disclosure of information from this form to and by the Participating Authority for the purpose of verification of this claim and the investigation, prevention, detection and prosecution of fraud.';
     const wrappedDeclaration = pdf.splitTextToSize(declarationText, contentWidth);
     const declHeight = wrappedDeclaration.length * 2.5; // More compact line height
     await addPageIfNeeded(declHeight + lineHeights.sectionGap);
@@ -566,65 +563,49 @@ export default function TimesheetGenerator() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-3">Timesheet Generator</h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">Create professional timesheets for interpreter services with our easy-to-use form</p>
+              <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2">Timesheet Generator</h1>
+          <p className="text-sm sm:text-base text-gray-600">Fill out the form below to generate your timesheet PDF</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
-          <form className="space-y-8">
+        <div className="card p-4 sm:p-6 lg:p-8">
+          <form className="space-y-6">
             {/* BOOKING DETAILS */}
-            <div className="border-b border-gray-200 pb-8">
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900">Booking Details</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Date</label>
+            <div className="form-section">
+              <h2 className="section-header">BOOKING DETAILS</h2>
+              <div className="form-grid">
+                <div className="input-group">
+                  <label>Date</label>
                   <input
                     type="date"
                     value={formData.date}
                     onChange={(e) => handleInputChange('date', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-600 transition-all duration-200 hover:border-gray-400"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                <div className="input-group">
+                  <label>Start Time</label>
                   <input
                     type="time"
                     value={formData.startTime}
                     onChange={(e) => handleInputChange('startTime', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-600"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                <div className="input-group">
+                  <label>End Time</label>
                   <input
                     type="time"
                     value={formData.actualFinishTime}
                     onChange={(e) => handleInputChange('actualFinishTime', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-600"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration (Auto-calculated)</label>
+                <div className="input-group">
+                  <label>Duration (Auto-calculated)</label>
                   <input
                     type="text"
                     value={formData.estimatedDuration}
                     readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -691,16 +672,9 @@ export default function TimesheetGenerator() {
             </div>
 
             {/* INTERPRETER PROFILE */}
-            <div className="border-b border-gray-200 pb-8">
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-4">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900">Interpreter Profile</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="border-b border-gray-200 pb-4 sm:pb-6">
+              <h2 className="section-header">INTERPRETER PROFILE</h2>
+              <div className="form-grid">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Interpreter Name</label>
                   <input
@@ -745,16 +719,9 @@ export default function TimesheetGenerator() {
             </div>
 
             {/* CUSTOMER SECTION */}
-            <div className="border-b border-gray-200 pb-8">
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
-                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900">Customer Section</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="border-b border-gray-200 pb-4 sm:pb-6">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">TO BE COMPLETED BY THE CUSTOMER</h2>
+              <div className="form-grid">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Actual Start Time</label>
                   <input
@@ -867,101 +834,65 @@ export default function TimesheetGenerator() {
             </div>
 
             {/* INTERPRETER DECLARATION */}
-            <div className="pb-8">
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-4">
-                  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900">Interpreter's Declaration</h2>
-              </div>
-              <div className="space-y-6">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Interpreter Declaration Text</label>
-                  <textarea
-                    value={formData.interpreterDeclaration}
-                    onChange={(e) => handleInputChange('interpreterDeclaration', e.target.value)}
-                    placeholder="Enter the declaration text that will appear on the timesheet..."
-                    rows={6}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-600 transition-all duration-200 hover:border-gray-400 resize-none"
+            <div className="pb-4 sm:pb-6">
+              <h2 className="section-header">INTERPRETER'S DECLARATION</h2>
+              <div className="form-grid">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Interpreter's Signature</label>
+                  <input
+                    type="text"
+                    value={formData.interpreterSignature}
+                    onChange={(e) => handleInputChange('interpreterSignature', e.target.value)}
+                    placeholder="Signature or name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-600"
                   />
-                  <p className="text-xs text-gray-500 mt-2">This text will appear in the Interpreter's Declaration section of the PDF.</p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Interpreter's Signature</label>
-                    <input
-                      type="text"
-                      value={formData.interpreterSignature}
-                      onChange={(e) => handleInputChange('interpreterSignature', e.target.value)}
-                      placeholder="Signature or name"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-600 transition-all duration-200 hover:border-gray-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Interpreter Date</label>
-                    <input
-                      type="date"
-                      value={formData.interpreterDate}
-                      onChange={(e) => handleInputChange('interpreterDate', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 transition-all duration-200 hover:border-gray-400"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Interpreter Date</label>
+                  <input
+                    type="date"
+                    value={formData.interpreterDate}
+                    onChange={(e) => handleInputChange('interpreterDate', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  />
                 </div>
               </div>
             </div>
 
-            <div className="text-center space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="text-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   type="button"
                   onClick={async () => await generatePDF()}
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-10 py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
+                  className="btn-primary"
                 >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
                   Generate Timesheet PDF
                 </button>
                 <button
                   type="button"
                   onClick={async () => await generatePDF({ blank: true })}
-                  className="bg-gradient-to-r from-gray-600 to-gray-700 text-white px-10 py-4 rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
+                  className="btn-secondary"
                 >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
                   Download Blank Template
                 </button>
               </div>
             </div>
 
             {/* Live Preview Indicator */}
-            <div className="mt-6 text-center">
-              <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200 shadow-sm">
-                <div className="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
-                <span className="font-medium">Live Preview Active</span>
-                <span className="ml-2 text-green-600">Updates automatically as you type</span>
+            <div className="mt-4 text-center">
+              <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                Live Preview Active - Updates automatically as you type
               </div>
             </div>
 
             {/* PDF Preview Section */}
-            <div className="mt-10 border-t border-gray-200 pt-10">
-              <div className="flex justify-between items-center mb-8">
+            <div className="mt-6 sm:mt-8 border-t border-gray-200 pt-6 sm:pt-8">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
-                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-3xl font-bold text-gray-900">Live Document Preview</h3>
-                    <p className="text-gray-600 mt-1">See exactly how your timesheet will look</p>
-                  </div>
-                  <div className="ml-4 inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800 border border-green-200">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Live Document Preview</h3>
+                  <div className="ml-3 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1 animate-pulse"></div>
                     LIVE
                   </div>
                 </div>
@@ -975,11 +906,11 @@ export default function TimesheetGenerator() {
                 </button>
               </div>
               
-              <div className="bg-gray-100 rounded-lg p-4">
+              <div className="bg-gray-100 rounded-lg p-3 sm:p-4">
                 <div className="flex justify-center">
                   <div className="w-full max-w-4xl">
-                                         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                       <div className="p-6">
+                    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                      <div className="p-4 sm:p-6">
                                                   {/* Enhanced Header with Logo and Company Details */}
                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
                            <div className="flex justify-between items-start">
@@ -1007,29 +938,29 @@ export default function TimesheetGenerator() {
                            </div>
                          </div>
                          
-                         <h2 className="text-3xl font-bold text-slate-800 mb-4 text-center">TIMESHEET</h2>
+                         <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-4 text-center">TIMESHEET</h2>
                          <hr className="border-gray-300 mb-6" />
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {/* BOOKING DETAILS */}
-                          <div className="border-b border-gray-200 pb-4">
+                           {/* BOOKING DETAILS */}
+                           <div className="border-b border-gray-200 pb-4">
                             <h3 className="text-xl font-semibold text-gray-900 mb-2">BOOKING DETAILS</h3>
                             <div className="grid grid-cols-1 gap-2">
                               <div>
                                 <label className="block text-sm font-medium text-gray-700">Date</label>
                                 <p className="text-gray-900">{formData.date || '_________________'}</p>
                               </div>
-                                                             <div>
-                                 <label className="block text-sm font-medium text-gray-700">Start Time</label>
-                                 <p className="text-gray-900">{formData.startTime || '_________________'}</p>
-                               </div>
-                               <div>
-                                 <label className="block text-sm font-medium text-gray-700">End Time</label>
-                                 <p className="text-gray-900">{formData.actualFinishTime || '_________________'}</p>
-                               </div>
-                                                              <div>
-                                 <label className="block text-sm font-medium text-gray-700">Duration</label>
-                                 <p className="text-gray-900">{formData.estimatedDuration || '_________________'}</p>
-                               </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">Start Time</label>
+                                <p className="text-gray-900">{formData.startTime || '_________________'}</p>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">End Time</label>
+                                <p className="text-gray-900">{formData.actualFinishTime || '_________________'}</p>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">Duration</label>
+                                <p className="text-gray-900">{formData.estimatedDuration || '_________________'}</p>
+                              </div>
                               <div>
                                 <label className="block text-sm font-medium text-gray-700">Language</label>
                                 <p className="text-gray-900">{formData.language || '_________________'}</p>
@@ -1130,20 +1061,14 @@ export default function TimesheetGenerator() {
                           {/* INTERPRETER DECLARATION */}
                           <div className="pb-4">
                             <h3 className="text-xl font-semibold text-gray-900 mb-2">INTERPRETER'S DECLARATION</h3>
-                            <div className="space-y-3">
+                            <div className="grid grid-cols-1 gap-2">
                               <div>
-                                <label className="block text-sm font-medium text-gray-700">Declaration Text</label>
-                                <p className="text-gray-900 text-sm leading-relaxed">{formData.interpreterDeclaration || 'I am an authorised signatory for my department. I am signing to confirm that the Interpreter and the hours that I am authorising are accurate and I approve payment. I am signing to confirm that I have checked and verified the photo identification of the interpreter with the timesheet. I understand that if I knowingly provide false information this may result in disciplinary action and I may be liable to prosecution and civil recovery proceedings. I consent to the disclosure of information from this form to and by the Participating Authority for the purpose of verification of this claim and the investigation, prevention, detection and prosecution of fraud.'}</p>
+                                <label className="block text-sm font-medium text-gray-700">Interpreter's Signature</label>
+                                <p className="text-gray-900">{formData.interpreterSignature || '_________________'}</p>
                               </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700">Interpreter's Signature</label>
-                                  <p className="text-gray-900">{formData.interpreterSignature || '_________________'}</p>
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700">Interpreter Date</label>
-                                  <p className="text-gray-900">{formData.interpreterDate || '_________________'}</p>
-                                </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">Interpreter Date</label>
+                                <p className="text-gray-900">{formData.interpreterDate || '_________________'}</p>
                               </div>
                             </div>
                           </div>
@@ -1178,7 +1103,7 @@ export default function TimesheetGenerator() {
                   <p className="text-sm text-gray-600 mb-4">
                     This preview updates automatically as you fill out the form above. Use the buttons below to generate the final PDF.
                   </p>
-                  <div className="flex flex-wrap justify-center gap-3">
+                  <div className="flex flex-col sm:flex-row justify-center gap-3">
                     <button
                       onClick={async () => await generatePDF()}
                       className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium"
