@@ -29,6 +29,7 @@ interface TimesheetData {
   customerDate: string;
   interpreterSignature: string;
   interpreterDate: string;
+  customDeclaration: string;
 }
 
 export default function TimesheetGenerator() {
@@ -57,7 +58,8 @@ export default function TimesheetGenerator() {
     customerSignature: '',
     customerDate: '',
     interpreterSignature: '',
-    interpreterDate: ''
+    interpreterDate: '',
+    customDeclaration: 'I am an authorised signatory for my department. I am signing to confirm that the Interpreter and the hours that I am authorising are accurate and I approve payment. I am signing to confirm that I have checked and verified the photo identification of the interpreter with the timesheet. I understand that if I knowingly provide false information this may result in disciplinary action and I may be liable to prosecution and civil recovery proceedings. I consent to the disclosure of information from this form to and by the Participating Authority for the purpose of verification of this claim and the investigation, prevention, detection and prosecution of fraud.'
   });
 
   const handleInputChange = (field: keyof TimesheetData, value: string) => {
@@ -95,12 +97,23 @@ export default function TimesheetGenerator() {
         }
       }
       
+      // Ensure notes to interpreter doesn't exceed 150 characters
+      if (field === 'notesToInterpreter' && value.length > 150) {
+        newData.notesToInterpreter = value.substring(0, 150);
+      }
+      
       return newData;
     });
   };
 
   const generatePDF = async (options?: { blank?: boolean }) => {
-      const pdf = new jsPDF('p', 'mm', 'a4');
+    // Validate notes length before generating PDF
+    if (!options?.blank && formData.notesToInterpreter.length > 150) {
+      alert('Notes to interpreter exceed 150 characters. Please shorten the text to prevent overflow issues in the PDF.');
+      return;
+    }
+    
+    const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const marginX = 15;
@@ -120,10 +133,10 @@ export default function TimesheetGenerator() {
       smallSize: 8,
     };
     const lineHeights = {
-      small: 2.5,
-      normal: 3.5,
-      sectionGap: 3,
-      blockGap: 4,
+      small: 3.0, // Increased from 2.5 by 20%
+      normal: 4.2, // Increased from 3.5 by 20%
+      sectionGap: 3.6, // Increased from 3 by 20%
+      blockGap: 4.8, // Increased from 4 by 20%
     };
 
     let y = marginY + 15;
@@ -244,14 +257,20 @@ export default function TimesheetGenerator() {
       extraSpacing: number = 0
     ) => {
       pdf.setFontSize(font.labelSize);
-    pdf.setFont('helvetica', 'bold');
+      pdf.setFont('helvetica', 'bold');
       pdf.text(label, startX, y);
-    pdf.setFont('helvetica', 'normal');
+      pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(font.valueSize);
       const displayValue = value && value.trim() !== '' ? value : '_________________';
-      const wrapped = pdf.splitTextToSize(displayValue, valueMaxWidth);
-      pdf.text(wrapped, startX + labelWidth, y);
+      
+      // Ensure text doesn't exceed maximum width and wraps properly
+      const maxTextWidth = Math.max(valueMaxWidth, 0);
+      const wrapped = pdf.splitTextToSize(displayValue, maxTextWidth);
+      
+      // Calculate proper row height based on wrapped text
       const rowHeight = Math.max(lineHeights.normal, wrapped.length * lineHeights.small) + extraSpacing;
+      
+      pdf.text(wrapped, startX + labelWidth, y);
       y += rowHeight;
       return rowHeight;
     };
@@ -319,7 +338,7 @@ export default function TimesheetGenerator() {
         const isSelected = selectedRating === (keys[i] as any);
         x += drawCheckboxWithLabel(x, y, label, isSelected) + 10;
       });
-      y += lineHeights.blockGap;
+      y += lineHeights.blockGap * 1.2; // Increased spacing by 20%
     };
 
     const drawFooter = () => {
@@ -392,7 +411,8 @@ export default function TimesheetGenerator() {
           customerSignature: '',
           customerDate: '',
           interpreterSignature: '',
-          interpreterDate: ''
+          interpreterDate: '',
+          customDeclaration: formData.customDeclaration
         }
       : formData;
 
@@ -420,22 +440,22 @@ export default function TimesheetGenerator() {
     };
 
     const leftItems = [
-      { label: 'Date:', value: data.date, extraSpacing: 1 },
-      { label: 'Start time:', value: data.startTime, extraSpacing: 1 },
-      { label: 'End time:', value: data.actualFinishTime, extraSpacing: 1 },
-      { label: 'Duration:', value: data.estimatedDuration, extraSpacing: 1 },
-      { label: 'Language:', value: data.language, extraSpacing: 1 },
-      { label: 'Subject:', value: data.subject, extraSpacing: 1 },
-      { label: 'Location:', value: data.location, extraSpacing: 1 },
-      { label: 'Booking made by:', value: data.bookingMadeBy, extraSpacing: 1 },
-      { label: 'Service user name:', value: data.serviceUserName, extraSpacing: 1 },
-      { label: 'Notes to interpreter:', value: data.notesToInterpreter, extraSpacing: 1 },
+      { label: 'Date:', value: data.date, extraSpacing: 1.2 },
+      { label: 'Start time:', value: data.startTime, extraSpacing: 1.2 },
+      { label: 'End time:', value: data.actualFinishTime, extraSpacing: 1.2 },
+      { label: 'Duration:', value: data.estimatedDuration, extraSpacing: 1.2 },
+      { label: 'Language:', value: data.language, extraSpacing: 1.2 },
+      { label: 'Subject:', value: data.subject, extraSpacing: 1.2 },
+      { label: 'Location:', value: data.location, extraSpacing: 1.2 },
+      { label: 'Booking made by:', value: data.bookingMadeBy, extraSpacing: 1.2 },
+      { label: 'Service user name:', value: data.serviceUserName, extraSpacing: 1.2 },
+      { label: 'Notes to interpreter:', value: data.notesToInterpreter.length > 150 ? data.notesToInterpreter.substring(0, 150) + '...' : data.notesToInterpreter, extraSpacing: 1.2 },
     ];
     const rightItems = [
-      { label: 'Name:', value: data.interpreterName, extraSpacing: 1 },
-      { label: 'Job Ref No:', value: data.jobReferenceNo, extraSpacing: 1 },
-      { label: 'Reports to:', value: data.interpreterReportsTo, extraSpacing: 1 },
-      { label: 'Contact number:', value: data.reportsToContactNumber, extraSpacing: 1 },
+      { label: 'Name:', value: data.interpreterName, extraSpacing: 1.2 },
+      { label: 'Job Ref No:', value: data.jobReferenceNo, extraSpacing: 1.2 },
+      { label: 'Reports to:', value: data.interpreterReportsTo, extraSpacing: 1.2 },
+      { label: 'Contact number:', value: data.reportsToContactNumber, extraSpacing: 1.2 },
     ];
     const leftHeight = measureKVRowsHeight(leftItems, columnWidth);
     const rightHeight = measureKVRowsHeight(rightItems, columnWidth);
@@ -481,12 +501,12 @@ export default function TimesheetGenerator() {
     pdf.setFontSize(font.valueSize);
     pdf.setFont('helvetica', 'normal');
     const labelWidth = 24;
-    drawLabelValue('Start Time:', data.actualStartTime, marginX, labelWidth, (contentWidth / 2) - labelWidth - 6);
+    drawLabelValue('Start Time:', data.actualStartTime, marginX, labelWidth, (contentWidth / 2) - labelWidth - 6, 1.2);
     const prevY = y - lineHeights.normal;
     const rightHalfX = marginX + contentWidth / 2 + 6;
     const savedY = y;
     y = prevY;
-    drawLabelValue('Finish Time:', data.actualFinishTime, rightHalfX, labelWidth, (contentWidth / 2) - labelWidth - 6);
+    drawLabelValue('Finish Time:', data.actualFinishTime, rightHalfX, labelWidth, (contentWidth / 2) - labelWidth - 6, 1.2);
     y = savedY;
     
     // Add extra spacing after time fields
@@ -495,18 +515,18 @@ export default function TimesheetGenerator() {
     await addPageIfNeeded(lineHeights.blockGap);
     pdf.setFontSize(font.valueSize);
     drawYesNo('Did the service user attend?', marginX, y, (data.serviceUserAttended as any));
-    y += lineHeights.blockGap; // Increased spacing between yes/no questions
+    y += lineHeights.blockGap * 1.2; // Increased spacing between yes/no questions by 20%
     await addPageIfNeeded(lineHeights.blockGap);
     drawYesNo('Did the interpreter arrive on time?', marginX, y, (data.interpreterOnTime as any));
-    y += lineHeights.blockGap; // Increased spacing between yes/no questions
+    y += lineHeights.blockGap * 1.2; // Increased spacing between yes/no questions by 20%
     await addPageIfNeeded(lineHeights.blockGap);
     drawYesNo('Was it easy to arrange the interpreter?', marginX, y, (data.easyToArrange as any));
-    y += lineHeights.blockGap;
+    y += lineHeights.blockGap * 1.2;
 
     await addPageIfNeeded(lineHeights.blockGap);
     pdf.setFont('helvetica', 'normal');
     pdf.text('How would you rate their performance?', marginX, y);
-    y += lineHeights.blockGap; // Increased spacing after question
+    y += lineHeights.blockGap * 1.2; // Increased spacing after question by 20%
     drawRatingRow(data.performanceRating);
 
     await addPageIfNeeded(lineHeights.blockGap);
@@ -516,40 +536,40 @@ export default function TimesheetGenerator() {
     pdf.setFont('helvetica', 'italic');
     pdf.setFontSize(font.smallSize);
     pdf.text('Please complete the following fields in BLOCK CAPITALS:', marginX, y);
-    y += lineHeights.sectionGap + 2; // Added extra spacing after BLOCK CAPITALS instruction
+    y += (lineHeights.sectionGap + 2) * 1.2; // Increased spacing after BLOCK CAPITALS instruction by 20%
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(font.valueSize);
-    drawLabelValue('Customer Full Name:', data.customerFullName, marginX, 40, contentWidth - 40, 1.5);
-    drawLabelValue('Department:', data.department, marginX, 28, contentWidth - 28, 1.5);
+    drawLabelValue('Customer Full Name:', data.customerFullName, marginX, 40, contentWidth - 40, 1.8);
+    drawLabelValue('Department:', data.department, marginX, 28, contentWidth - 28, 1.8);
     await addPageIfNeeded(lineHeights.blockGap);
     const signRowY = y;
-    drawLabelValue('Customer\'s Signature:', data.customerSignature, marginX, 42, (contentWidth / 2) - 42 - 6, 1.5);
+    drawLabelValue('Customer\'s Signature:', data.customerSignature, marginX, 42, (contentWidth / 2) - 42 - 6, 1.8);
     const savedY2 = y;
     y = signRowY;
-    drawLabelValue('Date:', data.customerDate, marginX + contentWidth / 2 + 6, 14, (contentWidth / 2) - 14 - 6, 1.5);
+    drawLabelValue('Date:', data.customerDate, marginX + contentWidth / 2 + 6, 14, (contentWidth / 2) - 14 - 6, 1.8);
     y = Math.max(savedY2, y) + lineHeights.sectionGap;
 
     await sectionTitle('INTERPRETER\'S DECLARATION');
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(8); // Increased font size for better readability
-    const declarationText = 'I am an authorised signatory for my department. I am signing to confirm that the Interpreter and the hours that I am authorising are accurate and I approve payment. I am signing to confirm that I have checked and verified the photo identification of the interpreter with the timesheet. I understand that if I knowingly provide false information this may result in disciplinary action and I may be liable to prosecution and civil recovery proceedings. I consent to the disclosure of information from this form to and by the Participating Authority for the purpose of verification of this claim and the investigation, prevention, detection and prosecution of fraud.';
+    const declarationText = data.customDeclaration || 'I am an authorised signatory for my department. I am signing to confirm that the Interpreter and the hours that I am authorising are accurate and I approve payment. I am signing to confirm that I have checked and verified the photo identification of the interpreter with the timesheet. I understand that if I knowingly provide false information this may result in disciplinary action and I may be liable to prosecution and civil recovery proceedings. I consent to the disclosure of information from this form to and by the Participating Authority for the purpose of verification of this claim and the investigation, prevention, detection and prosecution of fraud.';
     const wrappedDeclaration = pdf.splitTextToSize(declarationText, contentWidth);
-    const declHeight = wrappedDeclaration.length * 2.5; // More compact line height
+    const declHeight = wrappedDeclaration.length * 3.0; // Increased line height by 20% from 2.5
     await addPageIfNeeded(declHeight + lineHeights.sectionGap);
     pdf.text(wrappedDeclaration, marginX, y);
-    y += declHeight + lineHeights.sectionGap + 3; // Added extra spacing after declaration text
+    y += declHeight + lineHeights.sectionGap + 3.6; // Increased spacing after declaration text by 20%
 
     const interpRowY = y;
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(font.valueSize);
-    drawLabelValue('Interpreter\'s Signature:', data.interpreterSignature, marginX, 44, (contentWidth / 2) - 44 - 6);
+    drawLabelValue('Interpreter\'s Signature:', data.interpreterSignature, marginX, 44, (contentWidth / 2) - 44 - 6, 1.2);
     const savedY3 = y;
     y = interpRowY;
-    drawLabelValue('Date:', data.interpreterDate, marginX + contentWidth / 2 + 6, 14, (contentWidth / 2) - 14 - 6);
+    drawLabelValue('Date:', data.interpreterDate, marginX + contentWidth / 2 + 6, 14, (contentWidth / 2) - 14 - 6, 1.2);
     y = Math.max(savedY3, y);
 
     // Reduce spacing before footer - only add minimal gap
-    y += lineHeights.small;
+    y += lineHeights.small * 1.2; // Increased spacing by 20%
 
     // Add footer to all pages
     const pageCount = (pdf as any).getNumberOfPages();
@@ -573,39 +593,43 @@ export default function TimesheetGenerator() {
         <div className="card p-4 sm:p-6 lg:p-8">
           <form className="space-y-6">
             {/* BOOKING DETAILS */}
-            <div className="form-section">
+            <div className="border-b border-gray-200 pb-4 sm:pb-6">
               <h2 className="section-header">BOOKING DETAILS</h2>
               <div className="form-grid">
-                <div className="input-group">
-                  <label>Date</label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                   <input
                     type="date"
                     value={formData.date}
                     onChange={(e) => handleInputChange('date', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-600 transition-colors hover:border-gray-400"
                   />
                 </div>
-                <div className="input-group">
-                  <label>Start Time</label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
                   <input
                     type="time"
                     value={formData.startTime}
                     onChange={(e) => handleInputChange('startTime', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-600"
                   />
                 </div>
-                <div className="input-group">
-                  <label>End Time</label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
                   <input
                     type="time"
                     value={formData.actualFinishTime}
                     onChange={(e) => handleInputChange('actualFinishTime', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-600"
                   />
                 </div>
-                <div className="input-group">
-                  <label>Duration (Auto-calculated)</label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration (Auto-calculated)</label>
                   <input
                     type="text"
                     value={formData.estimatedDuration}
                     readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -659,14 +683,41 @@ export default function TimesheetGenerator() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes to Interpreter</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes to Interpreter
+                    <span className="text-xs text-gray-500 ml-2 font-normal">
+                      (Max 150 characters)
+                    </span>
+                  </label>
                   <textarea
                     value={formData.notesToInterpreter}
                     onChange={(e) => handleInputChange('notesToInterpreter', e.target.value)}
                     placeholder="Any special instructions or notes"
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-600"
+                    maxLength={150}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-600 transition-colors ${
+                      formData.notesToInterpreter.length > 130 ? 'border-red-300 focus:border-red-500 focus:ring-red-500' :
+                      formData.notesToInterpreter.length > 100 ? 'border-orange-300 focus:border-orange-500 focus:ring-orange-500' :
+                      'border-gray-300 focus:border-blue-500'
+                    }`}
                   />
+                  <div className="char-limit-info">
+                    <span className="char-limit-text">
+                      Maximum 150 characters to prevent overflow
+                    </span>
+                    <span className={`char-limit-counter ${
+                      formData.notesToInterpreter.length > 130 ? 'danger' : 
+                      formData.notesToInterpreter.length > 100 ? 'warning' : 
+                      'safe'
+                    }`}>
+                      {formData.notesToInterpreter.length}/150
+                    </span>
+                  </div>
+                  {formData.notesToInterpreter.length > 100 && (
+                    <div className="text-xs text-gray-600 mt-1">
+                      <span className="font-medium">Note:</span> Long text may be truncated in the PDF to maintain proper document layout and prevent overflow issues.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -836,6 +887,48 @@ export default function TimesheetGenerator() {
             {/* INTERPRETER DECLARATION */}
             <div className="pb-4 sm:pb-6">
               <h2 className="section-header">INTERPRETER'S DECLARATION</h2>
+              
+              {/* Custom Declaration Text Editor */}
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Declaration Text
+                    <span className="text-xs text-gray-500 ml-2 font-normal">
+                      (This text appears in both filled and blank PDFs)
+                    </span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const defaultDeclaration = 'I am an authorised signatory for my department. I am signing to confirm that the Interpreter and the hours that I am authorising are accurate and I approve payment. I am signing to confirm that I have checked and verified the photo identification of the interpreter with the timesheet. I understand that if I knowingly provide false information this may result in disciplinary action and I may be liable to prosecution and civil recovery proceedings. I consent to the disclosure of information from this form to and by the Participating Authority for the purpose of verification of this claim and the investigation, prevention, detection and prosecution of fraud.';
+                      handleInputChange('customDeclaration', defaultDeclaration);
+                    }}
+                    className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                  >
+                    Reset to Default
+                  </button>
+                </div>
+                                  <textarea
+                    value={formData.customDeclaration}
+                    onChange={(e) => handleInputChange('customDeclaration', e.target.value)}
+                    placeholder="Enter the declaration text that will appear in the PDF"
+                    rows={6}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-600 resize-y declaration-textarea"
+                  />
+                                  <div className="mt-2 text-xs text-gray-600">
+                    <p>This declaration text will be used in both the filled timesheet and blank template PDFs.</p>
+                    <p className="mt-1">You can customize the legal text, company policies, or any other declaration content as needed.</p>
+                    <div className="mt-2 flex justify-between items-center">
+                      <span className="text-gray-500">
+                        Current length: {formData.customDeclaration.length} characters
+                      </span>
+                      <span className="text-gray-500">
+                        Recommended: Keep under 500 characters for optimal PDF layout
+                      </span>
+                    </div>
+                  </div>
+              </div>
+              
               <div className="form-grid">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Interpreter's Signature</label>
@@ -983,7 +1076,25 @@ export default function TimesheetGenerator() {
                               </div>
                               <div>
                                 <label className="block text-sm font-medium text-gray-700">Notes to Interpreter</label>
-                                <p className="text-gray-900">{formData.notesToInterpreter || '_________________'}</p>
+                                <p className="text-gray-900">
+                                  {formData.notesToInterpreter ? 
+                                    (formData.notesToInterpreter.length > 150 ? 
+                                      formData.notesToInterpreter.substring(0, 150) + '...' : 
+                                      formData.notesToInterpreter
+                                    ) : 
+                                    '_________________'
+                                  }
+                                </p>
+                                {formData.notesToInterpreter && formData.notesToInterpreter.length > 150 && (
+                                  <div className="mt-1">
+                                    <p className="text-xs text-red-500 font-medium">
+                                      ⚠️ Text truncated to prevent overflow in PDF
+                                    </p>
+                                    <p className="text-xs text-gray-600">
+                                      Original length: {formData.notesToInterpreter.length} characters
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1061,6 +1172,15 @@ export default function TimesheetGenerator() {
                           {/* INTERPRETER DECLARATION */}
                           <div className="pb-4">
                             <h3 className="text-xl font-semibold text-gray-900 mb-2">INTERPRETER'S DECLARATION</h3>
+                            
+                            {/* Declaration Text Preview */}
+                            <div className="mb-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Declaration Text</label>
+                              <div className="declaration-preview">
+                                {formData.customDeclaration || 'No declaration text entered'}
+                              </div>
+                            </div>
+                            
                             <div className="grid grid-cols-1 gap-2">
                               <div>
                                 <label className="block text-sm font-medium text-gray-700">Interpreter's Signature</label>

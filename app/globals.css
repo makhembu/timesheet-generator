@@ -164,3 +164,37 @@ body {
 .input-group textarea:disabled {
   @apply bg-gray-100 text-gray-500 cursor-not-allowed;
 }
+
+/* Character limit styling */
+.char-limit-info {
+  @apply flex justify-between items-center mt-1;
+}
+
+.char-limit-text {
+  @apply text-xs text-gray-500;
+}
+
+.char-limit-counter {
+  @apply text-xs;
+}
+
+.char-limit-counter.warning {
+  @apply text-orange-500;
+}
+
+.char-limit-counter.danger {
+  @apply text-red-500;
+}
+
+.char-limit-counter.safe {
+  @apply text-gray-500;
+}
+
+/* Declaration text styling */
+.declaration-textarea {
+  @apply font-mono text-sm leading-relaxed;
+}
+
+.declaration-preview {
+  @apply bg-gray-50 border border-gray-200 rounded p-3 text-sm text-gray-700 leading-relaxed font-mono;
+}
