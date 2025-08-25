@@ -165,8 +165,8 @@ export default function TimesheetGenerator() {
     const drawHeader = async () => {
       // Enhanced letterhead with better design - reduced height
       const headerHeight = 30;
-      const logoWidth = 30;
-      const logoHeight = 8;
+      const logoWidth = 45;
+      const logoHeight = 12;
       
       // Background rectangle for letterhead
       pdf.setFillColor(248, 250, 252); // Light gray background
