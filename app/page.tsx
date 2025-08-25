@@ -604,7 +604,7 @@ export default function TimesheetGenerator() {
   };
 
   return (
-              <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
+              <div className="min-h-screen py-4 sm:py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between bg-white/70 border border-gray-200 rounded-lg p-3 sm:p-4">
@@ -635,8 +635,8 @@ export default function TimesheetGenerator() {
           </div>
 
           <div className="text-center mt-4">
-            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1">Jambo Timesheet Generator</h1>
-            <p className="text-sm sm:text-base text-gray-600">Fill out the form below to generate your timesheet PDF</p>
+            <h1 className="text-2xl sm:text-4xl font-bold text-white drop-shadow mb-1">Jambo Timesheet Generator</h1>
+            <p className="text-sm sm:text-base text-slate-300">Fill out the form below to generate your timesheet PDF</p>
           </div>
         </div>
  
@@ -1055,7 +1055,7 @@ export default function TimesheetGenerator() {
             <div className="mt-6 sm:mt-8 border-t border-gray-200 pt-6 sm:pt-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3">
                 <div className="flex items-center">
-                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Live Document Preview</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold text-white drop-shadow">Live Document Preview</h3>
                   <div className="ml-3 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1 animate-pulse"></div>
                     LIVE
@@ -1292,7 +1292,7 @@ export default function TimesheetGenerator() {
                 </div>
                 
                 <div className="mt-4 text-center">
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-slate-300 mb-4">
                     This preview updates automatically as you fill out the form above. Use the buttons below to generate the final PDF.
                   </p>
                   <div className="flex flex-col sm:flex-row justify-center gap-3">

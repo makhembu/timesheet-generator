@@ -3,14 +3,26 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0b1020;
+  --background-accent-1: #0f172a; /* slate-900 */
+  --background-accent-2: #111827; /* gray-900 */
+  --background-accent-3: #1f2937; /* gray-800 */
+  --brand-1: 99, 102, 241; /* indigo-500 */
+  --brand-2: 147, 51, 234; /* purple-600 */
+  --brand-3: 16, 185, 129; /* emerald-500 */
+  --foreground: #e5e7eb;
 }
 
 body {
-  background: var(--background);
+  /* Layered gradient background */
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(var(--brand-1), 0.18), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(var(--brand-2), 0.16), transparent 60%),
+    radial-gradient(800px 500px at 50% 120%, rgba(var(--brand-3), 0.10), transparent 60%),
+    linear-gradient(180deg, var(--background-accent-1), var(--background-accent-2) 50%, var(--background-accent-3));
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  background-attachment: fixed;
 }
 
 /* Custom form input styling */
