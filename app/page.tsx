@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import jsPDF from 'jspdf';
 
 interface TimesheetData {
@@ -26,8 +26,10 @@ interface TimesheetData {
   customerFullName: string;
   department: string;
   customerSignature: string;
+  customerSignatureImage?: string;
   customerDate: string;
   interpreterSignature: string;
+  interpreterSignatureImage?: string;
   interpreterDate: string;
   customDeclaration: string;
 }
@@ -55,8 +57,10 @@ const initialFormData: TimesheetData = {
   customerFullName: '',
   department: '',
   customerSignature: '',
+  customerSignatureImage: '',
   customerDate: '',
   interpreterSignature: '',
+  interpreterSignatureImage: '',
   interpreterDate: '',
   customDeclaration:
     'I am an authorised signatory for my department. I am signing to confirm that the Interpreter and the hours that I am authorising are accurate and I approve payment. I am signing to confirm that I have checked and verified the photo identification of the interpreter with the timesheet. I understand that if I knowingly provide false information this may result in disciplinary action and I may be liable to prosecution and civil recovery proceedings. I consent to the disclosure of information from this form to and by the Participating Authority for the purpose of verification of this claim and the investigation, prevention, detection and prosecution of fraud.',
@@ -64,6 +68,13 @@ const initialFormData: TimesheetData = {
 
 export default function TimesheetGenerator() {
   const [formData, setFormData] = useState<TimesheetData>(initialFormData);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(true);
+  const customerCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const interpreterCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDrawingCustomerRef = useRef(false);
+  const isDrawingInterpreterRef = useRef(false);
+  const lastPosCustomerRef = useRef<{ x: number; y: number } | null>(null);
+  const lastPosInterpreterRef = useRef<{ x: number; y: number } | null>(null);
 
   // Load saved form (if any)
   useEffect(() => {
@@ -127,7 +138,127 @@ export default function TimesheetGenerator() {
     });
   };
 
-  const generatePDF = async (options?: { blank?: boolean }) => {
+  const readFileAsDataURL = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleSignatureUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: 'customerSignatureImage' | 'interpreterSignatureImage'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await readFileAsDataURL(file);
+      setFormData(prev => ({ ...prev, [field]: dataUrl } as any));
+    } catch {}
+  };
+
+  const getCanvasContext = (canvas: HTMLCanvasElement | null) => {
+    if (!canvas) return null;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#111827';
+    return ctx;
+  };
+
+  const getRelativePos = (canvas: HTMLCanvasElement, clientX: number, clientY: number) => {
+    const rect = canvas.getBoundingClientRect();
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  };
+
+  const startDraw = (
+    who: 'customer' | 'interpreter',
+    clientX: number,
+    clientY: number
+  ) => {
+    const canvas = who === 'customer' ? customerCanvasRef.current : interpreterCanvasRef.current;
+    const ctx = getCanvasContext(canvas);
+    if (!canvas || !ctx) return;
+    const pos = getRelativePos(canvas, clientX, clientY);
+    if (who === 'customer') {
+      isDrawingCustomerRef.current = true;
+      lastPosCustomerRef.current = pos;
+    } else {
+      isDrawingInterpreterRef.current = true;
+      lastPosInterpreterRef.current = pos;
+    }
+  };
+
+  const moveDraw = (
+    who: 'customer' | 'interpreter',
+    clientX: number,
+    clientY: number
+  ) => {
+    const canvas = who === 'customer' ? customerCanvasRef.current : interpreterCanvasRef.current;
+    const ctx = getCanvasContext(canvas);
+    if (!canvas || !ctx) return;
+    const isDrawing = who === 'customer' ? isDrawingCustomerRef.current : isDrawingInterpreterRef.current;
+    const lastPos = who === 'customer' ? lastPosCustomerRef.current : lastPosInterpreterRef.current;
+    if (!isDrawing || !lastPos) return;
+    const pos = getRelativePos(canvas, clientX, clientY);
+    ctx.beginPath();
+    ctx.moveTo(lastPos.x, lastPos.y);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    if (who === 'customer') {
+      lastPosCustomerRef.current = pos;
+    } else {
+      lastPosInterpreterRef.current = pos;
+    }
+  };
+
+  const endDraw = (who: 'customer' | 'interpreter') => {
+    const canvas = who === 'customer' ? customerCanvasRef.current : interpreterCanvasRef.current;
+    if (who === 'customer') {
+      isDrawingCustomerRef.current = false;
+    } else {
+      isDrawingInterpreterRef.current = false;
+    }
+    if (canvas) {
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        setFormData(prev => ({
+          ...prev,
+          [who === 'customer' ? 'customerSignatureImage' : 'interpreterSignatureImage']: dataUrl,
+        } as any));
+      } catch {}
+    }
+  };
+
+  const clearCanvas = (who: 'customer' | 'interpreter') => {
+    const canvas = who === 'customer' ? customerCanvasRef.current : interpreterCanvasRef.current;
+    const ctx = getCanvasContext(canvas || null);
+    if (!canvas || !ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setFormData(prev => ({
+      ...prev,
+      [who === 'customer' ? 'customerSignatureImage' : 'interpreterSignatureImage']: '',
+    } as any));
+  };
+
+  const computeHash = async (payload: unknown) => {
+    try {
+      const text = JSON.stringify(payload);
+      const enc = new TextEncoder();
+      const data = enc.encode(text);
+      const buf = await crypto.subtle.digest('SHA-256', data);
+      const bytes = Array.from(new Uint8Array(buf));
+      const hex = bytes.map(b => b.toString(16).padStart(2, '0')).join('');
+      return hex;
+    } catch {
+      return '';
+    }
+  };
+
+  const generatePDF = async (options?: { blank?: boolean; share?: boolean }) => {
     // Validate notes length before generating PDF
     if (!options?.blank && formData.notesToInterpreter.length > 150) {
       alert('Notes to interpreter exceed 150 characters. Please shorten the text to prevent overflow issues in the PDF.');
@@ -154,10 +285,10 @@ export default function TimesheetGenerator() {
       smallSize: 9,
     };
     const lineHeights = {
-      small: 3.3, // +10% for more breathing room
-      normal: 4.62, // +10%
-      sectionGap: 3.96, // +10%
-      blockGap: 5.28, // +10%
+      small: 3.0, // Increased from 2.5 by 20%
+      normal: 4.2, // Increased from 3.5 by 20%
+      sectionGap: 3.6, // Increased from 3 by 20%
+      blockGap: 4.8, // Increased from 4 by 20%
     };
 
     let y = marginY + 15;
@@ -362,6 +493,15 @@ export default function TimesheetGenerator() {
       y += lineHeights.blockGap * 1.2; // Increased spacing by 20%
     };
 
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const auditSummary = {
+      jobRef: formData.jobReferenceNo,
+      interpreter: formData.interpreterName,
+      generatedAt: timestamp,
+    };
+    let shortHash = '';
+
     const drawFooter = () => {
       const footerY = pageHeight - marginY - footerHeight;
       
@@ -399,6 +539,12 @@ export default function TimesheetGenerator() {
       // Address - right side
       pdf.text('Radley House, Richardshaw Rd', pageWidth - marginX - 5, footerY + 14, { align: 'right' });
       pdf.text('Pudsey, LS28 6LE', pageWidth - marginX - 5, footerY + 17, { align: 'right' });
+      
+      // Audit metadata - above company number
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(5);
+      const meta = `Generated: ${auditSummary.generatedAt}  •  Job Ref: ${auditSummary.jobRef || '-'}  •  Hash: ${shortHash ? shortHash.slice(0,8) : '-'}`;
+      pdf.text(meta, pageWidth / 2, footerY + 15.2, { align: 'center' });
       
       // Company number - bottom center
       pdf.setFontSize(4);
@@ -563,8 +709,46 @@ export default function TimesheetGenerator() {
     drawLabelValue('Customer Full Name:', data.customerFullName, marginX, 40, contentWidth - 40, 1.8);
     drawLabelValue('Department:', data.department, marginX, 28, contentWidth - 28, 1.8);
     await addPageIfNeeded(lineHeights.blockGap);
+    const drawSignatureRow = async (
+      label: string,
+      textValue: string,
+      imageDataUrl: string | undefined,
+      startX: number,
+      labelWidth: number,
+      valueMaxWidth: number,
+      maxImageHeight: number
+    ) => {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(font.labelSize);
+      pdf.text(label, startX, y);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(font.valueSize);
+
+      if (imageDataUrl) {
+        try {
+          // Reserve space for signature image
+          const imgWidth = valueMaxWidth;
+          const imgHeight = maxImageHeight;
+          await addPageIfNeeded(imgHeight + 2);
+          pdf.addImage(imageDataUrl, 'PNG', startX + labelWidth, y - (imgHeight - 3), imgWidth, imgHeight);
+          y += imgHeight + 2;
+          return;
+        } catch {}
+      }
+      // Fallback to text line
+      drawLabelValue('', textValue, startX, labelWidth, valueMaxWidth, 1.8);
+    };
+
     const signRowY = y;
-    drawLabelValue('Customer\'s Signature:', data.customerSignature, marginX, 42, (contentWidth / 2) - 42 - 6, 1.8);
+    await drawSignatureRow(
+      'Customer\'s Signature:',
+      data.customerSignature,
+      (data as any).customerSignatureImage,
+      marginX,
+      42,
+      (contentWidth / 2) - 42 - 6,
+      12
+    );
     const savedY2 = y;
     y = signRowY;
     drawLabelValue('Date:', data.customerDate, marginX + contentWidth / 2 + 6, 14, (contentWidth / 2) - 14 - 6, 1.8);
@@ -583,7 +767,15 @@ export default function TimesheetGenerator() {
     const interpRowY = y;
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(font.valueSize);
-    drawLabelValue('Interpreter\'s Signature:', data.interpreterSignature, marginX, 44, (contentWidth / 2) - 44 - 6, 1.2);
+    await drawSignatureRow(
+      'Interpreter\'s Signature:',
+      data.interpreterSignature,
+      (data as any).interpreterSignatureImage,
+      marginX,
+      44,
+      (contentWidth / 2) - 44 - 6,
+      12
+    );
     const savedY3 = y;
     y = interpRowY;
     drawLabelValue('Date:', data.interpreterDate, marginX + contentWidth / 2 + 6, 14, (contentWidth / 2) - 14 - 6, 1.2);
@@ -591,6 +783,12 @@ export default function TimesheetGenerator() {
 
     // Reduce spacing before footer - only add minimal gap
     y += lineHeights.small * 1.2; // Increased spacing by 20%
+
+    // Compute short hash for audit footer
+    try {
+      const hash = await computeHash({ ...data, timestamp });
+      shortHash = hash;
+    } catch {}
 
     // Add footer to all pages
     const pageCount = (pdf as any).getNumberOfPages();
@@ -600,6 +798,16 @@ export default function TimesheetGenerator() {
     }
 
       const filename = isBlank ? 'timesheet-fillable.pdf' : 'timesheet.pdf';
+      if (options?.share && (navigator as any).share) {
+        try {
+          const blob = pdf.output('blob');
+          const file = new File([blob], filename, { type: 'application/pdf' });
+          await (navigator as any).share({ title: filename, files: [file] });
+          return;
+        } catch {
+          // Fallback to save
+        }
+      }
       pdf.save(filename);
   };
 
@@ -921,6 +1129,30 @@ export default function TimesheetGenerator() {
                     placeholder="Signature or name"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-600"
                   />
+                  <div className="mt-2 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input type="file" accept="image/*" onChange={(e) => handleSignatureUpload(e, 'customerSignatureImage')} className="text-xs" />
+                      <button type="button" onClick={() => clearCanvas('customer')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Clear</button>
+                    </div>
+                    <div className="border rounded-md bg-white">
+                      <canvas
+                        ref={customerCanvasRef}
+                        width={600}
+                        height={180}
+                        className="w-full h-28 sm:h-36 cursor-crosshair"
+                        onMouseDown={(e) => startDraw('customer', e.clientX, e.clientY)}
+                        onMouseMove={(e) => moveDraw('customer', e.clientX, e.clientY)}
+                        onMouseUp={() => endDraw('customer')}
+                        onMouseLeave={() => endDraw('customer')}
+                        onTouchStart={(e) => { const t=e.touches[0]; startDraw('customer', t.clientX, t.clientY); }}
+                        onTouchMove={(e) => { const t=e.touches[0]; moveDraw('customer', t.clientX, t.clientY); }}
+                        onTouchEnd={() => endDraw('customer')}
+                      />
+                    </div>
+                    {formData.customerSignatureImage && (
+                      <div className="text-xs text-gray-600">Signature captured.</div>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Customer Date</label>
@@ -989,6 +1221,30 @@ export default function TimesheetGenerator() {
                     placeholder="Signature or name"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-600"
                   />
+                  <div className="mt-2 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input type="file" accept="image/*" onChange={(e) => handleSignatureUpload(e, 'interpreterSignatureImage')} className="text-xs" />
+                      <button type="button" onClick={() => clearCanvas('interpreter')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Clear</button>
+                    </div>
+                    <div className="border rounded-md bg-white">
+                      <canvas
+                        ref={interpreterCanvasRef}
+                        width={600}
+                        height={180}
+                        className="w-full h-28 sm:h-36 cursor-crosshair"
+                        onMouseDown={(e) => startDraw('interpreter', e.clientX, e.clientY)}
+                        onMouseMove={(e) => moveDraw('interpreter', e.clientX, e.clientY)}
+                        onMouseUp={() => endDraw('interpreter')}
+                        onMouseLeave={() => endDraw('interpreter')}
+                        onTouchStart={(e) => { const t=e.touches[0]; startDraw('interpreter', t.clientX, t.clientY); }}
+                        onTouchMove={(e) => { const t=e.touches[0]; moveDraw('interpreter', t.clientX, t.clientY); }}
+                        onTouchEnd={() => endDraw('interpreter')}
+                      />
+                    </div>
+                    {formData.interpreterSignatureImage && (
+                      <div className="text-xs text-gray-600">Signature captured.</div>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Interpreter Date</label>
@@ -1002,7 +1258,7 @@ export default function TimesheetGenerator() {
               </div>
             </div>
 
-            <div className="text-center">
+            <div className="text-center pb-24 sm:pb-0">
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   type="button"
@@ -1010,6 +1266,13 @@ export default function TimesheetGenerator() {
                   className="btn-primary"
                 >
                   Generate Timesheet PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => await generatePDF({ share: true })}
+                  className="btn-secondary"
+                >
+                  Share PDF
                 </button>
                 <button
                   type="button"
@@ -1062,16 +1325,26 @@ export default function TimesheetGenerator() {
                   </div>
                 </div>
                 <button
-                  onClick={() => {}} // No action needed here as preview is always visible
+                  type="button"
+                  onClick={() => setIsPreviewOpen(o => !o)}
                   className="text-gray-500 hover:text-gray-700 transition-colors"
+                  aria-expanded={isPreviewOpen}
+                  aria-controls="live-preview-section"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  {isPreviewOpen ? (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  )}
                 </button>
               </div>
               
-              <div className="bg-gray-100 rounded-lg p-3 sm:p-4">
+              {isPreviewOpen && (
+              <div id="live-preview-section" className="bg-gray-100 rounded-lg p-3 sm:p-4">
                 <div className="flex justify-center">
                   <div className="w-full max-w-4xl">
                     <div className="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -1291,7 +1564,7 @@ export default function TimesheetGenerator() {
                   </div>
                 </div>
                 
-                <div className="mt-4 text-center">
+                <div className="mt-4 text-center pb-24 sm:pb-0">
                   <p className="text-sm text-slate-300 mb-4">
                     This preview updates automatically as you fill out the form above. Use the buttons below to generate the final PDF.
                   </p>
@@ -1302,6 +1575,13 @@ export default function TimesheetGenerator() {
                       className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium"
                     >
                       Download Filled PDF
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => await generatePDF({ share: true })}
+                      className="bg-gray-700 text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors font-medium"
+                    >
+                      Share PDF
                     </button>
                     <button
                       type="button"
@@ -1335,6 +1615,7 @@ export default function TimesheetGenerator() {
                   </div>
                 </div>
               </div>
+              )}
             </div>
           </form>
         </div>
@@ -1342,3 +1623,6 @@ export default function TimesheetGenerator() {
     </div>
   );
 }
+/** Sticky mobile action bar **/
+// Renders at the root to give quick access on small screens
+// Note: This is appended after the component due to file structure; JSX is already returned above.
