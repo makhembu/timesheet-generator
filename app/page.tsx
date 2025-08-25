@@ -84,6 +84,10 @@ export default function TimesheetGenerator() {
         const parsed = JSON.parse(saved) as Partial<TimesheetData>;
         setFormData(prev => ({ ...prev, ...parsed }));
       }
+      const savedPreview = localStorage.getItem('isPreviewOpen');
+      if (savedPreview !== null) {
+        setIsPreviewOpen(savedPreview === 'true');
+      }
     } catch {}
   }, []);
 
@@ -91,8 +95,9 @@ export default function TimesheetGenerator() {
   useEffect(() => {
     try {
       localStorage.setItem('timesheetFormData', JSON.stringify(formData));
+      localStorage.setItem('isPreviewOpen', String(isPreviewOpen));
     } catch {}
-  }, [formData]);
+  }, [formData, isPreviewOpen]);
 
   const handleInputChange = (field: keyof TimesheetData, value: string) => {
     setFormData(prev => {
@@ -525,6 +530,8 @@ export default function TimesheetGenerator() {
       pdf.setFontSize(5);
       pdf.text('', pageWidth / 2, footerY + 15.2, { align: 'center' });
       
+      // Page numbers removed by request
+
       // Company number - bottom center
       pdf.setFontSize(4);
       pdf.text('Company No. 15333696', pageWidth / 2, footerY + 18, { align: 'center' });
@@ -773,7 +780,9 @@ export default function TimesheetGenerator() {
       drawFooter();
     }
 
-      const filename = isBlank ? 'timesheet-fillable.pdf' : 'timesheet.pdf';
+      const safeDate = (data.date || new Date().toISOString().slice(0,10)).replace(/\//g,'-');
+      const safeJob = (data.jobReferenceNo || '').replace(/[^a-zA-Z0-9_-]+/g,'').slice(0,24);
+      const filename = isBlank ? `Jambo_Timesheet_Template.pdf` : `Jambo_Timesheet_${safeDate}${safeJob ? '_' + safeJob : ''}.pdf`;
       if (options?.share && (navigator as any).share) {
         try {
           const blob = pdf.output('blob');
