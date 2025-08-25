@@ -149,15 +149,15 @@ export default function TimesheetGenerator() {
     const font = {
       headerSize: 17,
       sectionSize: 11,
-      labelSize: 9,
-      valueSize: 9,
-      smallSize: 8,
+      labelSize: 10,
+      valueSize: 10,
+      smallSize: 9,
     };
     const lineHeights = {
-      small: 3.0, // Increased from 2.5 by 20%
-      normal: 4.2, // Increased from 3.5 by 20%
-      sectionGap: 3.6, // Increased from 3 by 20%
-      blockGap: 4.8, // Increased from 4 by 20%
+      small: 3.3, // +10% for more breathing room
+      normal: 4.62, // +10%
+      sectionGap: 3.96, // +10%
+      blockGap: 5.28, // +10%
     };
 
     let y = marginY + 15;
