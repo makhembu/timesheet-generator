@@ -68,6 +68,8 @@ const initialFormData: TimesheetData = {
 
 export default function TimesheetGenerator() {
   const [formData, setFormData] = useState<TimesheetData>(initialFormData);
+  const [enableCustomerDraw, setEnableCustomerDraw] = useState(false);
+  const [enableInterpreterDraw, setEnableInterpreterDraw] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(true);
   const customerCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const interpreterCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -184,6 +186,7 @@ export default function TimesheetGenerator() {
     clientX: number,
     clientY: number
   ) => {
+    if ((who === 'customer' && !enableCustomerDraw) || (who === 'interpreter' && !enableInterpreterDraw)) return;
     const canvas = who === 'customer' ? customerCanvasRef.current : interpreterCanvasRef.current;
     const ctx = getCanvasContext(canvas);
     if (!canvas || !ctx) return;
@@ -202,6 +205,7 @@ export default function TimesheetGenerator() {
     clientX: number,
     clientY: number
   ) => {
+    if ((who === 'customer' && !enableCustomerDraw) || (who === 'interpreter' && !enableInterpreterDraw)) return;
     const canvas = who === 'customer' ? customerCanvasRef.current : interpreterCanvasRef.current;
     const ctx = getCanvasContext(canvas);
     if (!canvas || !ctx) return;
@@ -221,6 +225,7 @@ export default function TimesheetGenerator() {
   };
 
   const endDraw = (who: 'customer' | 'interpreter') => {
+    if ((who === 'customer' && !enableCustomerDraw) || (who === 'interpreter' && !enableInterpreterDraw)) return;
     const canvas = who === 'customer' ? customerCanvasRef.current : interpreterCanvasRef.current;
     if (who === 'customer') {
       isDrawingCustomerRef.current = false;
@@ -1118,13 +1123,30 @@ export default function TimesheetGenerator() {
                     <div className="flex items-center gap-2">
                       <input type="file" accept="image/*" onChange={(e) => handleSignatureUpload(e, 'customerSignatureImage')} className="text-xs" />
                       <button type="button" onClick={() => clearCanvas('customer')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Clear</button>
+                      <label className="ml-2 inline-flex items-center gap-1 text-xs text-gray-700">
+                        <input type="checkbox" checked={enableCustomerDraw} onChange={(e) => setEnableCustomerDraw(e.target.checked)} />
+                        Enable drawing
+                      </label>
                     </div>
-                    <div className="border rounded-md bg-white">
+                    <div className={`relative rounded-md bg-white ${enableCustomerDraw ? 'border border-gray-300' : 'border-2 border-dashed border-gray-300'}`}>
+                      {!enableCustomerDraw && (
+                        <div className="absolute inset-0 flex items-center justify-center text-gray-500 pointer-events-none select-none">
+                          <div className="flex items-center gap-2 text-xs sm:text-sm">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 19l7-7 3 3-7 7-3 .5.5-3z"/>
+                              <path d="M18 13l-3-3"/>
+                            </svg>
+                            <span>Enable drawing to sign</span>
+                          </div>
+                        </div>
+                      )}
                       <canvas
                         ref={customerCanvasRef}
                         width={600}
                         height={180}
-                        className="w-full h-28 sm:h-36 cursor-crosshair"
+                        aria-label="Customer signature canvas"
+                        aria-describedby="customer-signature-help"
+                        className={`w-full h-28 sm:h-36 ${enableCustomerDraw ? 'cursor-crosshair' : 'cursor-not-allowed pointer-events-none'}`}
                         onMouseDown={(e) => startDraw('customer', e.clientX, e.clientY)}
                         onMouseMove={(e) => moveDraw('customer', e.clientX, e.clientY)}
                         onMouseUp={() => endDraw('customer')}
@@ -1134,6 +1156,7 @@ export default function TimesheetGenerator() {
                         onTouchEnd={() => endDraw('customer')}
                       />
                     </div>
+                    <div id="customer-signature-help" className="sr-only">Check Enable drawing to sign with your finger or mouse, or upload an image.</div>
                     {formData.customerSignatureImage && (
                       <div className="text-xs text-gray-600">Signature captured.</div>
                     )}
@@ -1210,13 +1233,30 @@ export default function TimesheetGenerator() {
                     <div className="flex items-center gap-2">
                       <input type="file" accept="image/*" onChange={(e) => handleSignatureUpload(e, 'interpreterSignatureImage')} className="text-xs" />
                       <button type="button" onClick={() => clearCanvas('interpreter')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Clear</button>
+                      <label className="ml-2 inline-flex items-center gap-1 text-xs text-gray-700">
+                        <input type="checkbox" checked={enableInterpreterDraw} onChange={(e) => setEnableInterpreterDraw(e.target.checked)} />
+                        Enable drawing
+                      </label>
                     </div>
-                    <div className="border rounded-md bg-white">
+                    <div className={`relative rounded-md bg-white ${enableInterpreterDraw ? 'border border-gray-300' : 'border-2 border-dashed border-gray-300'}`}>
+                      {!enableInterpreterDraw && (
+                        <div className="absolute inset-0 flex items-center justify-center text-gray-500 pointer-events-none select-none">
+                          <div className="flex items-center gap-2 text-xs sm:text-sm">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 19l7-7 3 3-7 7-3 .5.5-3z"/>
+                              <path d="M18 13l-3-3"/>
+                            </svg>
+                            <span>Enable drawing to sign</span>
+                          </div>
+                        </div>
+                      )}
                       <canvas
                         ref={interpreterCanvasRef}
                         width={600}
                         height={180}
-                        className="w-full h-28 sm:h-36 cursor-crosshair"
+                        aria-label="Interpreter signature canvas"
+                        aria-describedby="interpreter-signature-help"
+                        className={`w-full h-28 sm:h-36 ${enableInterpreterDraw ? 'cursor-crosshair' : 'cursor-not-allowed pointer-events-none'}`}
                         onMouseDown={(e) => startDraw('interpreter', e.clientX, e.clientY)}
                         onMouseMove={(e) => moveDraw('interpreter', e.clientX, e.clientY)}
                         onMouseUp={() => endDraw('interpreter')}
@@ -1226,6 +1266,7 @@ export default function TimesheetGenerator() {
                         onTouchEnd={() => endDraw('interpreter')}
                       />
                     </div>
+                    <div id="interpreter-signature-help" className="sr-only">Check Enable drawing to sign with your finger or mouse, or upload an image.</div>
                     {formData.interpreterSignatureImage && (
                       <div className="text-xs text-gray-600">Signature captured.</div>
                     )}
