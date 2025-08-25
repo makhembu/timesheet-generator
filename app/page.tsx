@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import jsPDF from 'jspdf';
 
 interface TimesheetData {
@@ -32,35 +32,56 @@ interface TimesheetData {
   customDeclaration: string;
 }
 
+const initialFormData: TimesheetData = {
+  date: '',
+  startTime: '',
+  estimatedDuration: '',
+  language: '',
+  subject: '',
+  location: '',
+  bookingMadeBy: '',
+  serviceUserName: '',
+  notesToInterpreter: '',
+  interpreterName: '',
+  jobReferenceNo: '',
+  interpreterReportsTo: '',
+  reportsToContactNumber: '',
+  actualStartTime: '',
+  actualFinishTime: '',
+  serviceUserAttended: '',
+  interpreterOnTime: '',
+  easyToArrange: '',
+  performanceRating: '',
+  customerFullName: '',
+  department: '',
+  customerSignature: '',
+  customerDate: '',
+  interpreterSignature: '',
+  interpreterDate: '',
+  customDeclaration:
+    'I am an authorised signatory for my department. I am signing to confirm that the Interpreter and the hours that I am authorising are accurate and I approve payment. I am signing to confirm that I have checked and verified the photo identification of the interpreter with the timesheet. I understand that if I knowingly provide false information this may result in disciplinary action and I may be liable to prosecution and civil recovery proceedings. I consent to the disclosure of information from this form to and by the Participating Authority for the purpose of verification of this claim and the investigation, prevention, detection and prosecution of fraud.',
+};
+
 export default function TimesheetGenerator() {
-  const [formData, setFormData] = useState<TimesheetData>({
-    date: '',
-    startTime: '',
-    estimatedDuration: '',
-    language: '',
-    subject: '',
-    location: '',
-    bookingMadeBy: '',
-    serviceUserName: '',
-    notesToInterpreter: '',
-    interpreterName: '',
-    jobReferenceNo: '',
-    interpreterReportsTo: '',
-    reportsToContactNumber: '',
-    actualStartTime: '',
-    actualFinishTime: '',
-    serviceUserAttended: '',
-    interpreterOnTime: '',
-    easyToArrange: '',
-    performanceRating: '',
-    customerFullName: '',
-    department: '',
-    customerSignature: '',
-    customerDate: '',
-    interpreterSignature: '',
-    interpreterDate: '',
-    customDeclaration: 'I am an authorised signatory for my department. I am signing to confirm that the Interpreter and the hours that I am authorising are accurate and I approve payment. I am signing to confirm that I have checked and verified the photo identification of the interpreter with the timesheet. I understand that if I knowingly provide false information this may result in disciplinary action and I may be liable to prosecution and civil recovery proceedings. I consent to the disclosure of information from this form to and by the Participating Authority for the purpose of verification of this claim and the investigation, prevention, detection and prosecution of fraud.'
-  });
+  const [formData, setFormData] = useState<TimesheetData>(initialFormData);
+
+  // Load saved form (if any)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('timesheetFormData');
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<TimesheetData>;
+        setFormData(prev => ({ ...prev, ...parsed }));
+      }
+    } catch {}
+  }, []);
+
+  // Auto-save on changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('timesheetFormData', JSON.stringify(formData));
+    } catch {}
+  }, [formData]);
 
   const handleInputChange = (field: keyof TimesheetData, value: string) => {
     setFormData(prev => {
@@ -585,13 +606,42 @@ export default function TimesheetGenerator() {
   return (
               <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2">Timesheet Generator</h1>
-          <p className="text-sm sm:text-base text-gray-600">Fill out the form below to generate your timesheet PDF</p>
-        </div>
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center justify-between bg-white/70 border border-gray-200 rounded-lg p-3 sm:p-4">
+            <div className="flex items-center">
+              <img
+                src="/logo-purple.jpeg"
+                alt="Company Logo"
+                className="w-28 h-8 object-contain mr-3 sm:mr-4"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+              <div className="w-28 h-8 bg-purple-600 rounded flex flex-col items-center justify-center mr-3 sm:mr-4 hidden">
+                <span className="text-white text-[10px] sm:text-xs font-bold leading-tight">COMPANY</span>
+                <span className="text-white text-[10px] sm:text-xs font-bold leading-tight">LOGO</span>
+              </div>
+              <div>
+                <div className="text-base sm:text-xl font-bold text-slate-800">Jambo Linguists Ltd</div>
+                <div className="text-xs sm:text-sm text-slate-600">The Home Of Swahili</div>
+              </div>
+            </div>
+            <div className="hidden sm:block text-right text-xs text-slate-600">
+              <div>jamii@jambolinguists.com</div>
+              <div>+44 7938 065717</div>
+            </div>
+          </div>
 
+          <div className="text-center mt-4">
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1">Jambo Timesheet Generator</h1>
+            <p className="text-sm sm:text-base text-gray-600">Fill out the form below to generate your timesheet PDF</p>
+          </div>
+        </div>
+ 
         <div className="card p-4 sm:p-6 lg:p-8">
-          <form className="space-y-6">
+          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
             {/* BOOKING DETAILS */}
             <div className="border-b border-gray-200 pb-4 sm:pb-6">
               <h2 className="section-header">BOOKING DETAILS</h2>
@@ -847,9 +897,9 @@ export default function TimesheetGenerator() {
                   <input
                     type="text"
                     value={formData.customerFullName}
-                    onChange={(e) => handleInputChange('customerFullName', e.target.value)}
+                    onChange={(e) => handleInputChange('customerFullName', e.target.value.toUpperCase())}
                     placeholder="Full name in BLOCK CAPITALS"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-600"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-600 uppercase"
                   />
                 </div>
                 <div>
@@ -857,9 +907,9 @@ export default function TimesheetGenerator() {
                   <input
                     type="text"
                     value={formData.department}
-                    onChange={(e) => handleInputChange('department', e.target.value)}
+                    onChange={(e) => handleInputChange('department', e.target.value.toUpperCase())}
                     placeholder="Department name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-600"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-600 uppercase"
                   />
                 </div>
                 <div>
@@ -967,6 +1017,28 @@ export default function TimesheetGenerator() {
                   className="btn-secondary"
                 >
                   Download Blank Template
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      localStorage.setItem('timesheetFormData', JSON.stringify(formData));
+                      alert('Form data saved.');
+                    } catch {}
+                  }}
+                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-300 transition-colors font-medium"
+                >
+                  Save Form
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(initialFormData);
+                    try { localStorage.removeItem('timesheetFormData'); } catch {}
+                  }}
+                  className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition-colors font-medium"
+                >
+                  Clear Form
                 </button>
               </div>
             </div>
@@ -1225,16 +1297,40 @@ export default function TimesheetGenerator() {
                   </p>
                   <div className="flex flex-col sm:flex-row justify-center gap-3">
                     <button
+                      type="button"
                       onClick={async () => await generatePDF()}
                       className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium"
                     >
                       Download Filled PDF
                     </button>
                     <button
+                      type="button"
                       onClick={async () => await generatePDF({ blank: true })}
                       className="bg-gray-700 text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors font-medium"
                     >
                       Download Blank Template
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try {
+                          localStorage.setItem('timesheetFormData', JSON.stringify(formData));
+                          alert('Form data saved.');
+                        } catch {}
+                      }}
+                      className="bg-gray-200 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-300 transition-colors font-medium"
+                    >
+                      Save Form
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(initialFormData);
+                        try { localStorage.removeItem('timesheetFormData'); } catch {}
+                      }}
+                      className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition-colors font-medium"
+                    >
+                      Clear Form
                     </button>
                   </div>
                 </div>
