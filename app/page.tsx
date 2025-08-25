@@ -244,20 +244,6 @@ export default function TimesheetGenerator() {
     } as any));
   };
 
-  const computeHash = async (payload: unknown) => {
-    try {
-      const text = JSON.stringify(payload);
-      const enc = new TextEncoder();
-      const data = enc.encode(text);
-      const buf = await crypto.subtle.digest('SHA-256', data);
-      const bytes = Array.from(new Uint8Array(buf));
-      const hex = bytes.map(b => b.toString(16).padStart(2, '0')).join('');
-      return hex;
-    } catch {
-      return '';
-    }
-  };
-
   const generatePDF = async (options?: { blank?: boolean; share?: boolean }) => {
     // Validate notes length before generating PDF
     if (!options?.blank && formData.notesToInterpreter.length > 150) {
@@ -408,21 +394,22 @@ export default function TimesheetGenerator() {
       valueMaxWidth: number,
       extraSpacing: number = 0
     ) => {
-      pdf.setFontSize(font.labelSize);
+      // Single-line label; push value start by labelWidth
       pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(font.labelSize);
       pdf.text(label, startX, y);
+
+      // Wrap value within its column
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(font.valueSize);
       const displayValue = value && value.trim() !== '' ? value : '_________________';
-      
-      // Ensure text doesn't exceed maximum width and wraps properly
-      const maxTextWidth = Math.max(valueMaxWidth, 0);
-      const wrapped = pdf.splitTextToSize(displayValue, maxTextWidth);
-      
-      // Calculate proper row height based on wrapped text
-      const rowHeight = Math.max(lineHeights.normal, wrapped.length * lineHeights.small) + extraSpacing;
-      
-      pdf.text(wrapped, startX + labelWidth, y);
+      const wrappedValue = pdf.splitTextToSize(displayValue, Math.max(valueMaxWidth, 0));
+
+      // Row height based on value height (label is single line)
+      const valueHeight = Math.max(lineHeights.normal, wrappedValue.length * lineHeights.small);
+      const rowHeight = valueHeight + extraSpacing;
+
+      pdf.text(wrappedValue, startX + labelWidth, y);
       y += rowHeight;
       return rowHeight;
     };
@@ -436,7 +423,7 @@ export default function TimesheetGenerator() {
     ) => {
       const savedY = y;
       y = startY;
-      const labelWidth = 32;
+      const labelWidth = 40; // push values a bit further right
       items.forEach((it) => {
         if (allowPageBreaks) {
           addPageIfNeeded(lineHeights.normal);
@@ -493,14 +480,7 @@ export default function TimesheetGenerator() {
       y += lineHeights.blockGap * 1.2; // Increased spacing by 20%
     };
 
-    const now = new Date();
-    const timestamp = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    const auditSummary = {
-      jobRef: formData.jobReferenceNo,
-      interpreter: formData.interpreterName,
-      generatedAt: timestamp,
-    };
-    let shortHash = '';
+    
 
     const drawFooter = () => {
       const footerY = pageHeight - marginY - footerHeight;
@@ -540,11 +520,10 @@ export default function TimesheetGenerator() {
       pdf.text('Radley House, Richardshaw Rd', pageWidth - marginX - 5, footerY + 14, { align: 'right' });
       pdf.text('Pudsey, LS28 6LE', pageWidth - marginX - 5, footerY + 17, { align: 'right' });
       
-      // Audit metadata - above company number
+      // Spacer for aesthetics
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(5);
-      const meta = `Generated: ${auditSummary.generatedAt}  •  Job Ref: ${auditSummary.jobRef || '-'}  •  Hash: ${shortHash ? shortHash.slice(0,8) : '-'}`;
-      pdf.text(meta, pageWidth / 2, footerY + 15.2, { align: 'center' });
+      pdf.text('', pageWidth / 2, footerY + 15.2, { align: 'center' });
       
       // Company number - bottom center
       pdf.setFontSize(4);
@@ -599,8 +578,11 @@ export default function TimesheetGenerator() {
       let total = 0;
       items.forEach((it) => {
         const displayValue = it.value && it.value.trim() !== '' ? it.value : '_________________';
-        const wrapped = pdf.splitTextToSize(displayValue, maxWidth - labelWidth);
-        const rowHeight = Math.max(lineHeights.normal, wrapped.length * lineHeights.small) + (it.extraSpacing || 0);
+        const wrappedValue = pdf.splitTextToSize(displayValue, maxWidth - labelWidth);
+        const wrappedLabel = pdf.splitTextToSize(it.label, labelWidth);
+        const labelHeight = Math.max(lineHeights.normal, wrappedLabel.length * lineHeights.small);
+        const valueHeight = Math.max(lineHeights.normal, wrappedValue.length * lineHeights.small);
+        const rowHeight = Math.max(labelHeight, valueHeight) + (it.extraSpacing || 0);
         total += rowHeight;
       });
       return total;
@@ -783,12 +765,6 @@ export default function TimesheetGenerator() {
 
     // Reduce spacing before footer - only add minimal gap
     y += lineHeights.small * 1.2; // Increased spacing by 20%
-
-    // Compute short hash for audit footer
-    try {
-      const hash = await computeHash({ ...data, timestamp });
-      shortHash = hash;
-    } catch {}
 
     // Add footer to all pages
     const pageCount = (pdf as any).getNumberOfPages();
